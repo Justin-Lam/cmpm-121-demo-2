@@ -22,6 +22,7 @@ if (!ctx) { throw new Error("Failed to get 2D context"); }		// ensure that we go
 const cursor = { active: false, x: 0, y: 0 };
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
+// these events were copied from https://glitch.com/~quant-paint
 canvas.addEventListener("mousedown", (e) => {
 	// e = "event object"
 	cursor.active = true;
@@ -43,3 +44,12 @@ canvas.addEventListener("mouseup", (e) => {
 	cursor.active = false;
 });
 app.append(canvas);
+
+// Clear Button
+const clearButton: HTMLButtonElement = document.createElement("button");
+clearButton.innerHTML = "Clear";
+clearButton.addEventListener("click", () => {
+	// this was copied from https://glitch.com/~quant-paint
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+app.append(clearButton);
