@@ -1,3 +1,4 @@
+// note: many of the things here were copied or inspired from https://glitch.com/~quant-paint
 import "./style.css";
 
 const APP_NAME: string = "Sticker Sketchpad";
@@ -26,7 +27,6 @@ appTitle.innerHTML = APP_NAME;
 app.append(appTitle);
 
 // Canvas
-// many of the things here were copied or inspired from https://glitch.com/~quant-paint
 // create variables
 const canvas: HTMLCanvasElement = document.createElement("canvas");
 const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d"); // ctx = "context" aka "CanvasRenderingContext2D object"
@@ -61,13 +61,11 @@ canvas.addEventListener("mousemove", (e) => {
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
 });
-canvas.addEventListener("mouseup", (e) => {
+canvas.addEventListener("mouseup", () => {
 	cursor.active = false;
 	currentLine = [];
 });
-canvas.addEventListener("drawing-changed", (e) => {
-	// this is the redraw() function from paint1.html
-
+canvas.addEventListener("drawing-changed", () => {
 	// clear the canvas so we can redraw the lines
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// redraw the lines
@@ -93,14 +91,18 @@ app.append(canvas);
 const clearButton: HTMLButtonElement = document.createElement("button");
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
-	// this was copied from https://glitch.com/~quant-paint
 	lines = [];
 	canvas.dispatchEvent(drawingChangedEvent);
 });
 app.append(clearButton);
 
-// Functions
-function redraw(): void
-{
-	
-}
+// Undo Button
+const undoButton: HTMLButtonElement = document.createElement("button");
+undoButton.innerHTML = "Undo";
+undoButton.addEventListener("click", () => {
+	if (lines.length > 0) {
+		lines.pop();
+		canvas.dispatchEvent(drawingChangedEvent);
+	}
+})
+app.append(undoButton);
