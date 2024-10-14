@@ -30,6 +30,7 @@ const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d"); // ctx = "
 const cursor: Cursor = { active: false, x: 0, y: 0 };
 const lines = []; // array of lines, where a line is an array of points
 let currentLine = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
+const drawingChangedEvent = new Event("drawing-changed");
 
 // set components of variables
 canvas.width = CANVAS_WIDTH;
@@ -46,7 +47,7 @@ canvas.addEventListener("mousedown", (e) => {
 	lines.push(currentLine);
 	// enter the first point into currentLine
 	currentLine.push({ x: cursor.x, y: cursor.y });
-	redraw(); // for when we're creating any line that's not the first
+	canvas.dispatchEvent(drawingChangedEvent);
 });
 canvas.addEventListener("mousemove", (e) => {
 	if (cursor.active) {
@@ -54,27 +55,16 @@ canvas.addEventListener("mousemove", (e) => {
 		cursor.x = e.offsetX;
 		cursor.y = e.offsetY;
 		currentLine.push({ x: cursor.x, y: cursor.y });
-		redraw();
+		canvas.dispatchEvent(drawingChangedEvent);
 	}
 });
 canvas.addEventListener("mouseup", (e) => {
 	cursor.active = false;
 	currentLine = [];
-	console.log(lines);
 });
-app.append(canvas);
+canvas.addEventListener("drawing-changed", (e) => {
+	// this is the redraw() function from paint1.html
 
-// Clear Button
-const clearButton: HTMLButtonElement = document.createElement("button");
-clearButton.innerHTML = "Clear";
-clearButton.addEventListener("click", () => {
-	// this was copied from https://glitch.com/~quant-paint
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-});
-app.append(clearButton);
-
-// Functions
-function redraw(): void {
 	// clear the canvas so we can redraw the lines
 	ctx?.clearRect(0, 0, canvas.width, canvas.height);
 	// redraw the lines
@@ -93,4 +83,14 @@ function redraw(): void {
 			ctx?.stroke();
 		}
 	}
-}
+});
+app.append(canvas);
+
+// Clear Button
+const clearButton: HTMLButtonElement = document.createElement("button");
+clearButton.innerHTML = "Clear";
+clearButton.addEventListener("click", () => {
+	// this was copied from https://glitch.com/~quant-paint
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+app.append(clearButton);
