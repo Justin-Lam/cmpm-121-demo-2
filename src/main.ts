@@ -29,7 +29,7 @@ interface Cursor {
 // using classes like in paint2.html or using functional programming like in Functions are the Ultimate Commands (TS Playground)
 // I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
 type DrawLineCommand = (ctx: CanvasRenderingContext2D) => void;
-function makeLineCommand(line: Point[], width: number): DrawLineCommand {	// an makeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
+function makeDrawLineCommand(line: Point[], width: number): DrawLineCommand {
 	return (ctx: CanvasRenderingContext2D) => {
 		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
 		// set line width
@@ -47,7 +47,19 @@ function makeLineCommand(line: Point[], width: number): DrawLineCommand {	// an 
 		ctx.stroke();
 	}
 }
-//type ShowToolPreviewCommand = (ctx: CanvasRenderingContext2D) => void;
+type ShowToolPreviewCommand = (ctx: CanvasRenderingContext2D) => void;
+function makeShowToolPreviewCommand(pos: Point, radius: number) {
+	return (ctx: CanvasRenderingContext2D) => {
+		// set line width
+		ctx.lineWidth = THIN;
+		// start a new line
+		ctx.beginPath();
+		// draw the circle
+		ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2*Math.PI);
+		// show the circle
+		ctx.stroke();
+	}
+}
 
 
 // App Title
@@ -65,18 +77,12 @@ let displayLines: DrawLineCommand[] = []; // lines that should be displayed
 let redoLines: DrawLineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 const drawingChangedEvent: Event = new Event("drawing-changed");
+let showToolPreviewCommand: ShowToolPreviewCommand | null = null;
 const toolMovedEvent: Event = new Event("tool-moved");
 
 // set canvas dimensions
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
-
-// create cursor canvas events (e = "event object")
-canvas.addEventListener("tool-moved", () => {
-	ctx.beginPath();
-	ctx.ellipse(cursor.pos.x, cursor.pos.y, lineWidth, lineWidth, 0, 0, 2*Math.PI);
-	ctx.stroke();
-});
 
 // create drawing canvas events (e = "event object")
 canvas.addEventListener("mousedown", (e) => {
@@ -87,7 +93,7 @@ canvas.addEventListener("mousedown", (e) => {
 	// enter the first point into currentLine
 	currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
 	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
-	displayLines.push(makeLineCommand(currentLine, lineWidth));
+	displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
 	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 	// clear redoLines
@@ -105,7 +111,7 @@ canvas.addEventListener("mousemove", (e) => {
 		currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
 		// replace the current line command with a new one with an updated currentLine
 		displayLines.pop();
-		displayLines.push(makeLineCommand(currentLine, lineWidth));
+		displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
@@ -121,14 +127,23 @@ canvas.addEventListener("mouseup", () => {
 	currentLine = [];
 });
 canvas.addEventListener("drawing-changed", () => {
-	// clear the canvas so we can redraw the lines
+	// clear the canvas so we can redraw the lines and/or cursor
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	// redraw the lines
+	// draw the lines
 	for (const lineCommand of displayLines) {
 		lineCommand(ctx); // execute command
 	}
-	// redraw the cursor
-	//ctx.ellipse(cursor.pos.x, cursor.pos.y, lineWidth, lineWidth, 0, 0, 359);
+	// draw the cursor
+	if (showToolPreviewCommand) {	// showToolPreviewCommand != null
+		showToolPreviewCommand(ctx);	// execute command
+	}
+});
+// create cursor canvas events
+canvas.addEventListener("tool-moved", () => {
+	// update showToolPreviewCommand
+	showToolPreviewCommand = makeShowToolPreviewCommand({ x: cursor.pos.x, y: cursor.pos.y }, lineWidth);
+	// dispatch drawing changed event
+	canvas.dispatchEvent(drawingChangedEvent);
 });
 app.append(canvas);
 
