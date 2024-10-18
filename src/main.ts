@@ -1,11 +1,10 @@
-// note: many of the things here were copied or inspired from https://glitch.com/~quant-paint
+// Note: many of the things I wrote here were copied or inspired from https://glitch.com/~quant-paint
+
 import "./style.css";
 
 const APP_NAME: string = "Sticker Sketchpad";
 const app: HTMLDivElement = document.querySelector<HTMLDivElement>("#app")!;
-
 document.title = APP_NAME;
-//app.innerHTML = APP_NAME;
 
 // Variables
 const CANVAS_WIDTH: number = 256;
@@ -18,10 +17,6 @@ let lineWidth = THIN;	// thin selected by default
 interface Point { // a Line would be an array of points: Point[]
 	x: number;
 	y: number;
-}
-interface Cursor {
-	active: boolean;
-	pos: Point; // "position"
 }
 
 // Commands
@@ -72,7 +67,6 @@ app.append(appTitle);
 const canvas: HTMLCanvasElement = document.createElement("canvas");
 const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d"); // ctx = "context" aka "CanvasRenderingContext2D object"
 if (ctx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
-const cursor: Cursor = { active: false, pos: { x: 0, y: 0 } };
 let displayLines: DrawLineCommand[] = []; // lines that should be displayed
 let redoLines: DrawLineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
@@ -86,12 +80,8 @@ canvas.height = CANVAS_HEIGHT;
 
 // create drawing canvas events
 canvas.addEventListener("mousedown", (e: MouseEvent) => {
-	// activate cursor and set position
-	cursor.active = true;
-	cursor.pos.x = e.offsetX;
-	cursor.pos.y = e.offsetY;
 	// enter the first point into currentLine
-	currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
+	currentLine.push({ x: e.offsetX, y: e.offsetY });
 	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
 	displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
 	// hide the tool preview
@@ -101,37 +91,29 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
 	redoLines = [];
 });
 canvas.addEventListener("mousemove", (e: MouseEvent) => {
-	// set cursor position
-	cursor.pos.x = e.offsetX;
-	cursor.pos.y = e.offsetY;
-
 	// draw
-	if (cursor.active) {
+	if (e.buttons == 1) {	// left mouse button down
 		// push the cursor's position into currentLine
-		currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
+		currentLine.push({ x: e.offsetX, y: e.offsetY });
 		// replace the current line command with a new one with an updated currentLine
 		displayLines.pop();
 		displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
-
 	// show tool preview
 	else {
+		showToolPreviewCommand = makeShowToolPreviewCommand({ x: e.offsetX, y: e.offsetY }, lineWidth);
 		// dispatch tool moved event
 		canvas.dispatchEvent(toolMovedEvent);
 	}
 });
 canvas.addEventListener("mouseup", () => {
-	// deactivate cursor
-	cursor.active = false;
 	// get rid of the most recent line command if the line is just a point and therefore isn't proper
 	if (currentLine.length == 1) {
 		displayLines.pop();
 	}
 	// show tool preview
-	canvas.dispatchEvent(toolMovedEvent);
-	// dispatch tool moved event
 	canvas.dispatchEvent(toolMovedEvent);
 	// reset currentLine
 	currentLine = [];
@@ -142,6 +124,20 @@ canvas.addEventListener("mouseout", () => {
 	canvas.dispatchEvent(drawingChangedEvent);
   });
 canvas.addEventListener("drawing-changed", () => {
+	redraw();
+});
+
+// create cursor canvas events
+canvas.addEventListener("tool-moved", () => {
+	redraw();
+});
+
+// define canvas functions
+function redraw() {
+	// ensure ctx isn't null
+	if (!ctx) {
+		return;
+	}
 	// clear the canvas so we can redraw the lines and/or cursor
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// draw the lines
@@ -152,14 +148,7 @@ canvas.addEventListener("drawing-changed", () => {
 	if (showToolPreviewCommand) {	// showToolPreviewCommand != null
 		showToolPreviewCommand(ctx);	// execute command
 	}
-});
-// create cursor canvas events
-canvas.addEventListener("tool-moved", () => {
-	// update showToolPreviewCommand
-	showToolPreviewCommand = makeShowToolPreviewCommand({ x: cursor.pos.x, y: cursor.pos.y }, lineWidth);
-	// dispatch drawing changed event
-	canvas.dispatchEvent(drawingChangedEvent);
-});
+}
 app.append(canvas);
 
 // Clear Button
@@ -214,7 +203,6 @@ thinButton.addEventListener("click", () => {
 	thickButton.disabled = false;
 });
 app.append(thinButton);
-
 
 // Thick Button
 const thickButton: HTMLButtonElement = document.createElement("button");
