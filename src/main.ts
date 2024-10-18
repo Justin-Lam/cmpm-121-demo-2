@@ -7,43 +7,41 @@ const app: HTMLDivElement = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 //app.innerHTML = APP_NAME;
 
+// Constants
+const CANVAS_WIDTH: number = 256;
+const CANVAS_HEIGHT: number = CANVAS_WIDTH;	// square canvas
+
 // Interfaces
-interface Point {
-	x: number,
-	y: number
+interface Point { // a Line would be an array of points: Point[]
+	x: number;
+	y: number;
 }
 interface Cursor {
 	active: boolean;
-	pos: Point	// "position"
+	pos: Point; // "position"
 }
 
 // Commands
 // with the recent "Functions are the Ultimate Commands" annoucement in Canvas, I'm unclear whether we're supposed to implement these line commands
 // using classes like in paint2.html or using functional programming like in Functions are the Ultimate Commands (TS Playground)
 // I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
-type LineCommand = (ctx: CanvasRenderingContext2D) => void;		// a LineCommand is a function that takes in a ctx and does stuff but doesn't return anything
-function executeLineCommand(line: Point[]): LineCommand {
-	// an executeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
+type LineCommand = (ctx: CanvasRenderingContext2D) => void; // a LineCommand is a function that takes in a ctx and does stuff but doesn't return anything
+function makeLineCommand(line: Point[]): LineCommand {	// an makeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
 	return (ctx: CanvasRenderingContext2D) => {
-		if (line.length > 1) {
-			// start a new line
-			ctx.beginPath();
-			// move to the first point
-			const { x, y } = line[0];
-			ctx.moveTo(x, y);
-			// loop through the points, connecting them to make the line
-			for (const { x, y } of line) {
-				ctx.lineTo(x, y);
-			}
-			// show the line
-			ctx.stroke();
+		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
+		// start a new line
+		ctx.beginPath();
+		// move to the first point
+		const { x, y } = line[0];
+		ctx.moveTo(x, y);
+		// loop through the points, connecting them to make the line
+		for (const { x, y } of line) {
+			ctx.lineTo(x, y);
 		}
+		// show the line
+		ctx.stroke();
 	}
 }
-
-// Variables
-const CANVAS_WIDTH: number = 256;
-const CANVAS_HEIGHT: number = CANVAS_WIDTH;
 
 // App Title
 const appTitle: HTMLHeadingElement = document.createElement("h1");
@@ -54,16 +52,16 @@ app.append(appTitle);
 // create variables
 const canvas: HTMLCanvasElement = document.createElement("canvas");
 const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d"); // ctx = "context" aka "CanvasRenderingContext2D object"
-const cursor: Cursor = { active: false, pos: {x: 0, y: 0} };
-let displayLines: Point[][] = []; // lines that should be on the screen; an array of lines, where a line is an array of points
-let redoLines: Point[][] = [];	// lines that have been undone
+if (ctx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
+const cursor: Cursor = { active: false, pos: { x: 0, y: 0 } };
+let displayLines: LineCommand[] = []; // lines that should be displayed
+let redoLines: LineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 const drawingChangedEvent: Event = new Event("drawing-changed");
 
-// set components of variables
+// set canvas dimensions
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
-if (ctx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
 
 // create canvas events (e = "event object")
 canvas.addEventListener("mousedown", (e) => {
@@ -71,45 +69,44 @@ canvas.addEventListener("mousedown", (e) => {
 	cursor.active = true;
 	cursor.pos.x = e.offsetX;
 	cursor.pos.y = e.offsetY;
-	// add a line to displayLines
-	displayLines.push(currentLine);
 	// enter the first point into currentLine
 	currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
+	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
+	displayLines.push(makeLineCommand(currentLine));
+	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 	// clear redoLines
 	redoLines = [];
 });
 canvas.addEventListener("mousemove", (e) => {
 	if (cursor.active) {
-		// push the point of where the mouse currently is now to currentLine and then redraw
+		// push the cursor's new position into currentLine
 		cursor.pos.x = e.offsetX;
 		cursor.pos.y = e.offsetY;
 		currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
+		// replace the current line command with a new one with an updated currentLine
+		displayLines.pop();
+		displayLines.push(makeLineCommand(currentLine));
+		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
 });
 canvas.addEventListener("mouseup", () => {
+	// deactivate cursor
 	cursor.active = false;
+	// get rid of the most recent line command if the line is just a point and therefore isn't proper
+	if (currentLine.length == 1) {
+		displayLines.pop();
+	}
+	// reset currentLine
 	currentLine = [];
 });
 canvas.addEventListener("drawing-changed", () => {
 	// clear the canvas so we can redraw the lines
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// redraw the lines
-	for (const line of displayLines) {
-		// if the user just clicks on the canvas, it creates a line with just one point in it
-		// we don't want to draw those since a line needs two points (otherwise it won't know its direciton)
-		if (line.length > 1) {
-			ctx.beginPath();
-			// move to the first point
-			const { x, y } = line[0];
-			ctx.moveTo(x, y);
-			// connect the points to make the line
-			for (const { x, y } of line) {
-				ctx.lineTo(x, y);
-			  }
-			ctx.stroke();
-		}
+	for (const lineCommand of displayLines) {
+		lineCommand(ctx); // execute command
 	}
 });
 app.append(canvas);
@@ -128,14 +125,13 @@ const undoButton: HTMLButtonElement = document.createElement("button");
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
 	if (displayLines.length > 0) {
-		const lastLine: Point[] | undefined = displayLines.pop();
-		if (lastLine != undefined) {
-			// it should never be the case that lastLine is undefined, I just have this here to make a warning go away
-			redoLines.push(lastLine);
+		const lastLineCommand: LineCommand | undefined = displayLines.pop();
+		if (lastLineCommand != undefined) {
+			redoLines.push(lastLineCommand);
 			canvas.dispatchEvent(drawingChangedEvent);
-  		}
+		}
 	}
-})
+});
 app.append(undoButton);
 
 // Redo Button
@@ -143,12 +139,11 @@ const redoButton: HTMLButtonElement = document.createElement("button");
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
 	if (redoLines.length > 0) {
-		const lastRedoLine: Point[] | undefined = redoLines.pop();
-		if (lastRedoLine != undefined) {
-			// it should never be the case that lastRedoLine is undefined, I just have this here to make a warning go away
-			displayLines.push(lastRedoLine);
+		const lastRedoLineCommand: LineCommand | undefined = redoLines.pop();
+		if (lastRedoLineCommand != undefined) {
+			displayLines.push(lastRedoLineCommand);
 			canvas.dispatchEvent(drawingChangedEvent);
 		}
 	}
-})
+});
 app.append(redoButton);
