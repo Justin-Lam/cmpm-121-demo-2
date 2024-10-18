@@ -56,7 +56,6 @@ function makeShowToolPreviewCommand(pos: Point, radius: number) {
 	}
 }
 
-
 // App Title
 const appTitle: HTMLHeadingElement = document.createElement("h1");
 appTitle.innerHTML = APP_NAME;
@@ -70,8 +69,8 @@ if (ctx == null) throw new Error("ctx is null"); // ensure that we got something
 let displayLines: DrawLineCommand[] = []; // lines that should be displayed
 let redoLines: DrawLineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
-const drawingChangedEvent: Event = new Event("drawing-changed");
 let showToolPreviewCommand: ShowToolPreviewCommand | null = null;
+const drawingChangedEvent: Event = new Event("drawing-changed");
 const toolMovedEvent: Event = new Event("tool-moved");
 
 // set canvas dimensions
@@ -198,9 +197,11 @@ thinButton.innerHTML = "Thin";
 thinButton.disabled = true;	// thin is selected initially thus this button is disabled initially
 thinButton.addEventListener("click", () => {
 	lineWidth = THIN;
-
 	thinButton.disabled = true;
 	thickButton.disabled = false;
+	faceButton.disabled = false;
+	heartButton.disabled = false;
+	starButton.disabled = false;
 });
 app.append(thinButton);
 
@@ -209,7 +210,44 @@ const thickButton: HTMLButtonElement = document.createElement("button");
 thickButton.innerHTML = "Thick";
 thickButton.addEventListener("click", () => {
 	lineWidth = THICK;
-	thickButton.disabled = true;
 	thinButton.disabled = false;
+	thickButton.disabled = true;
+	faceButton.disabled = false;
+	heartButton.disabled = false;
+	starButton.disabled = false;
 });
 app.append(thickButton);
+
+// Sticker Buttons 😊💖⭐
+const faceButton: HTMLButtonElement = document.createElement("button");
+faceButton.innerHTML = "😊";
+faceButton.addEventListener("click", () => {
+	thinButton.disabled = false;
+	thickButton.disabled = false;
+	faceButton.disabled = true;
+	heartButton.disabled = false;
+	starButton.disabled = false;
+});
+app.append(faceButton);
+
+const heartButton: HTMLButtonElement = document.createElement("button");
+heartButton.innerHTML = "💖";
+heartButton.addEventListener("click", () => {
+	thinButton.disabled = false;
+	thickButton.disabled = false;
+	faceButton.disabled = false;
+	heartButton.disabled = true;
+	starButton.disabled = false;
+});
+app.append(heartButton);
+
+const starButton: HTMLButtonElement = document.createElement("button");
+starButton.innerHTML = "⭐";
+starButton.addEventListener("click", () => {
+	thinButton.disabled = false;
+	thickButton.disabled = false;
+	faceButton.disabled = false;
+	heartButton.disabled = false;
+	starButton.disabled = true;
+});
+app.append(starButton);
