@@ -63,12 +63,18 @@ let displayLines: LineCommand[] = []; // lines that should be displayed
 let redoLines: LineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 const drawingChangedEvent: Event = new Event("drawing-changed");
+const toolMovedEvent: Event = new Event("tool-moved");
 
 // set canvas dimensions
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
-// create canvas events (e = "event object")
+// create cursor canvas events (e = "event object")
+canvas.addEventListener("tool-moved", (e) => {
+	console.log("hi");
+});
+
+// create drawing canvas events (e = "event object")
 canvas.addEventListener("mousedown", (e) => {
 	// set cursor
 	cursor.active = true;
@@ -84,6 +90,9 @@ canvas.addEventListener("mousedown", (e) => {
 	redoLines = [];
 });
 canvas.addEventListener("mousemove", (e) => {
+	// dispatch tool moved event
+	canvas.dispatchEvent(toolMovedEvent);
+	// potentially draw
 	if (cursor.active) {
 		// push the cursor's new position into currentLine
 		cursor.pos.x = e.offsetX;
