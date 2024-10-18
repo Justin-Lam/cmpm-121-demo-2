@@ -11,7 +11,9 @@ const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH;	// square canvas
 const THIN = 1;	// line width
 const THICK = 4;	// line width
-let lineWidth = THIN;	// thin selected by default
+let markerSelected = true;	// thin marker selected by default
+let lineWidth = THIN;	// selected by default
+let sticker = "";
 
 // Interfaces
 interface Point { // a Line would be an array of points: Point[]
@@ -55,6 +57,13 @@ function makeShowToolPreviewCommand(pos: Point, radius: number) {
 		ctx.stroke();
 	}
 }
+type ShowStickerPreviewCommand = (ctx: CanvasRenderingContext2D) => void;
+function makeShowStickerPreviewCommand(pos: Point, sticker: string) {
+	return (ctx: CanvasRenderingContext2D) => {
+		ctx.font = "32px monospace";
+        ctx.fillText(sticker, pos.x - 21, pos.y + 12);
+	}
+}
 
 // App Title
 const appTitle: HTMLHeadingElement = document.createElement("h1");
@@ -70,6 +79,7 @@ let displayLines: DrawLineCommand[] = []; // lines that should be displayed
 let redoLines: DrawLineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 let showToolPreviewCommand: ShowToolPreviewCommand | null = null;
+let showStickerPreviewCommand: ShowStickerPreviewCommand | null = null;
 const drawingChangedEvent: Event = new Event("drawing-changed");
 const toolMovedEvent: Event = new Event("tool-moved");
 
@@ -83,8 +93,9 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
 	currentLine.push({ x: e.offsetX, y: e.offsetY });
 	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
 	displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
-	// hide the tool preview
+	// hide the tool and/ore sticker preview
 	showToolPreviewCommand = null;
+	showStickerPreviewCommand = null;
 	canvas.dispatchEvent(drawingChangedEvent);
 	// clear redoLines
 	redoLines = [];
@@ -100,10 +111,14 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
-	// show tool preview
-	else {
+	// make and show tool preview
+	else if (markerSelected) {
 		showToolPreviewCommand = makeShowToolPreviewCommand({ x: e.offsetX, y: e.offsetY }, lineWidth);
-		// dispatch tool moved event
+		canvas.dispatchEvent(toolMovedEvent);
+	}
+	// make and show sticker preview
+	else {
+		showStickerPreviewCommand = makeShowStickerPreviewCommand( { x: e.offsetX, y: e.offsetY }, sticker);
 		canvas.dispatchEvent(toolMovedEvent);
 	}
 });
@@ -118,8 +133,9 @@ canvas.addEventListener("mouseup", () => {
 	currentLine = [];
 });
 canvas.addEventListener("mouseout", () => {
-	// hide the tool preview
+	// hide the tool and sticker preview
 	showToolPreviewCommand = null;
+	showStickerPreviewCommand = null;
 	canvas.dispatchEvent(drawingChangedEvent);
   });
 canvas.addEventListener("drawing-changed", () => {
@@ -141,11 +157,15 @@ function redraw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// draw the lines
 	for (const lineCommand of displayLines) {
-		lineCommand(ctx); // execute command
+		lineCommand(ctx); // execute
 	}
 	// draw the cursor
-	if (showToolPreviewCommand) {	// showToolPreviewCommand != null
-		showToolPreviewCommand(ctx);	// execute command
+	if (showToolPreviewCommand) {	// != null
+		showToolPreviewCommand(ctx);	// execute
+	}
+	// draw the sticker
+	if (showStickerPreviewCommand) {	// != null
+		showStickerPreviewCommand(ctx);	// execute
 	}
 }
 app.append(canvas);
@@ -197,11 +217,13 @@ thinButton.innerHTML = "Thin";
 thinButton.disabled = true;	// thin is selected initially thus this button is disabled initially
 thinButton.addEventListener("click", () => {
 	lineWidth = THIN;
+	markerSelected = true;
 	thinButton.disabled = true;
 	thickButton.disabled = false;
 	faceButton.disabled = false;
 	heartButton.disabled = false;
 	starButton.disabled = false;
+	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thinButton);
 
@@ -210,11 +232,13 @@ const thickButton: HTMLButtonElement = document.createElement("button");
 thickButton.innerHTML = "Thick";
 thickButton.addEventListener("click", () => {
 	lineWidth = THICK;
+	markerSelected = true;
 	thinButton.disabled = false;
 	thickButton.disabled = true;
 	faceButton.disabled = false;
 	heartButton.disabled = false;
 	starButton.disabled = false;
+	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thickButton);
 
@@ -222,32 +246,41 @@ app.append(thickButton);
 const faceButton: HTMLButtonElement = document.createElement("button");
 faceButton.innerHTML = "😊";
 faceButton.addEventListener("click", () => {
+	sticker = "😊";
+	markerSelected = false;
 	thinButton.disabled = false;
 	thickButton.disabled = false;
 	faceButton.disabled = true;
 	heartButton.disabled = false;
 	starButton.disabled = false;
+	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(faceButton);
 
 const heartButton: HTMLButtonElement = document.createElement("button");
 heartButton.innerHTML = "💖";
 heartButton.addEventListener("click", () => {
+	sticker = "💖";
+	markerSelected = false;
 	thinButton.disabled = false;
 	thickButton.disabled = false;
 	faceButton.disabled = false;
 	heartButton.disabled = true;
 	starButton.disabled = false;
+	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(heartButton);
 
 const starButton: HTMLButtonElement = document.createElement("button");
 starButton.innerHTML = "⭐";
 starButton.addEventListener("click", () => {
+	sticker = "⭐";
+	markerSelected = false;
 	thinButton.disabled = false;
 	thickButton.disabled = false;
 	faceButton.disabled = false;
 	heartButton.disabled = false;
 	starButton.disabled = true;
+	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(starButton);
