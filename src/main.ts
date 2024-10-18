@@ -7,9 +7,12 @@ const app: HTMLDivElement = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 //app.innerHTML = APP_NAME;
 
-// Constants
+// Variables
 const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH;	// square canvas
+const THIN = 1;	// line width
+const THICK = 4;	// line width
+let lineWidth = THIN;
 
 // Interfaces
 interface Point { // a Line would be an array of points: Point[]
@@ -26,9 +29,11 @@ interface Cursor {
 // using classes like in paint2.html or using functional programming like in Functions are the Ultimate Commands (TS Playground)
 // I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
 type LineCommand = (ctx: CanvasRenderingContext2D) => void; // a LineCommand is a function that takes in a ctx and does stuff but doesn't return anything
-function makeLineCommand(line: Point[]): LineCommand {	// an makeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
+function makeLineCommand(line: Point[], width: number): LineCommand {	// an makeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
 	return (ctx: CanvasRenderingContext2D) => {
 		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
+		// set line width
+		ctx.lineWidth = width;
 		// start a new line
 		ctx.beginPath();
 		// move to the first point
@@ -72,7 +77,7 @@ canvas.addEventListener("mousedown", (e) => {
 	// enter the first point into currentLine
 	currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
 	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
-	displayLines.push(makeLineCommand(currentLine));
+	displayLines.push(makeLineCommand(currentLine, lineWidth));
 	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 	// clear redoLines
@@ -86,7 +91,7 @@ canvas.addEventListener("mousemove", (e) => {
 		currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
 		// replace the current line command with a new one with an updated currentLine
 		displayLines.pop();
-		displayLines.push(makeLineCommand(currentLine));
+		displayLines.push(makeLineCommand(currentLine, lineWidth));
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
@@ -152,7 +157,7 @@ app.append(redoButton);
 const thinButton: HTMLButtonElement = document.createElement("button");
 thinButton.innerHTML = "Thin";
 thinButton.addEventListener("click", () => {
-	ctx.lineWidth = 1;
+	lineWidth = THIN;
 });
 app.append(thinButton);
 
@@ -161,6 +166,6 @@ app.append(thinButton);
 const thickButton: HTMLButtonElement = document.createElement("button");
 thickButton.innerHTML = "Thick";
 thickButton.addEventListener("click", () => {
-	ctx.lineWidth = 4;
+	lineWidth = THICK;
 });
 app.append(thickButton);
