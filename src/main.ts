@@ -78,12 +78,12 @@ canvas.addEventListener("drawing-changed", () => {
 		if (line.length > 1) {
 			ctx.beginPath();
 			// move to the first point
-			const point: Point = line[0];
-			ctx.moveTo(point.x, point.y);
+			const { x, y } = line[0];
+            ctx.moveTo(x, y);
 			// connect the points to make the line
-			for (const point of line) {
-				ctx.lineTo(point.x, point.y);
-			}
+			for (const { x, y } of line) {
+				ctx.lineTo(x, y);
+			  }
 			ctx.stroke();
 		}
 	}
