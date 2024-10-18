@@ -96,7 +96,6 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
 	displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
 	// hide the tool preview
 	showToolPreviewCommand = null;
-	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 	// clear redoLines
 	redoLines = [];
@@ -137,6 +136,11 @@ canvas.addEventListener("mouseup", () => {
 	// reset currentLine
 	currentLine = [];
 });
+canvas.addEventListener("mouseout", () => {
+	// hide the tool preview
+	showToolPreviewCommand = null;
+	canvas.dispatchEvent(drawingChangedEvent);
+  });
 canvas.addEventListener("drawing-changed", () => {
 	// clear the canvas so we can redraw the lines and/or cursor
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
