@@ -84,9 +84,9 @@ const toolMovedEvent: Event = new Event("tool-moved");
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
-// create drawing canvas events (e = "event object")
-canvas.addEventListener("mousedown", (e) => {
-	// set cursor
+// create drawing canvas events
+canvas.addEventListener("mousedown", (e: MouseEvent) => {
+	// activate cursor and set position
 	cursor.active = true;
 	cursor.pos.x = e.offsetX;
 	cursor.pos.y = e.offsetY;
@@ -94,18 +94,19 @@ canvas.addEventListener("mousedown", (e) => {
 	currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
 	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
 	displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
+	// hide the tool preview
+	showToolPreviewCommand = null;
 	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 	// clear redoLines
 	redoLines = [];
 });
-canvas.addEventListener("mousemove", (e) => {
+canvas.addEventListener("mousemove", (e: MouseEvent) => {
 	// set cursor position
 	cursor.pos.x = e.offsetX;
 	cursor.pos.y = e.offsetY;
-	// dispatch tool moved event
-	canvas.dispatchEvent(toolMovedEvent);
-	// potentially draw
+
+	// draw
 	if (cursor.active) {
 		// push the cursor's position into currentLine
 		currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
@@ -115,6 +116,12 @@ canvas.addEventListener("mousemove", (e) => {
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
+
+	// show tool preview
+	else {
+		// dispatch tool moved event
+		canvas.dispatchEvent(toolMovedEvent);
+	}
 });
 canvas.addEventListener("mouseup", () => {
 	// deactivate cursor
@@ -123,6 +130,10 @@ canvas.addEventListener("mouseup", () => {
 	if (currentLine.length == 1) {
 		displayLines.pop();
 	}
+	// show tool preview
+	canvas.dispatchEvent(toolMovedEvent);
+	// dispatch tool moved event
+	canvas.dispatchEvent(toolMovedEvent);
 	// reset currentLine
 	currentLine = [];
 });
