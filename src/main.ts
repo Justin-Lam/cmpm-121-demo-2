@@ -12,7 +12,7 @@ const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH;	// square canvas
 const THIN = 1;	// line width
 const THICK = 4;	// line width
-let lineWidth = THIN;
+let lineWidth = THIN;	// thin selected by default
 
 // Interfaces
 interface Point { // a Line would be an array of points: Point[]
@@ -120,7 +120,9 @@ app.append(canvas);
 const clearButton: HTMLButtonElement = document.createElement("button");
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
+	// clear displayLines
 	displayLines = [];
+	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 });
 app.append(clearButton);
@@ -129,12 +131,13 @@ app.append(clearButton);
 const undoButton: HTMLButtonElement = document.createElement("button");
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
-	if (displayLines.length > 0) {
-		const lastLineCommand: LineCommand | undefined = displayLines.pop();
-		if (lastLineCommand != undefined) {
-			redoLines.push(lastLineCommand);
-			canvas.dispatchEvent(drawingChangedEvent);
-		}
+	// attempt to get the lastest line command while removing it from displayLines
+	const lastLineCommand: LineCommand | undefined = displayLines.pop();
+	if (lastLineCommand != undefined) {
+		// add the command to redoLines
+		redoLines.push(lastLineCommand);
+		// dispatch drawing changed event
+		canvas.dispatchEvent(drawingChangedEvent);
 	}
 });
 app.append(undoButton);
@@ -143,12 +146,13 @@ app.append(undoButton);
 const redoButton: HTMLButtonElement = document.createElement("button");
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
-	if (redoLines.length > 0) {
-		const lastRedoLineCommand: LineCommand | undefined = redoLines.pop();
-		if (lastRedoLineCommand != undefined) {
-			displayLines.push(lastRedoLineCommand);
-			canvas.dispatchEvent(drawingChangedEvent);
-		}
+		// attempt to get the lastest line command while removing it from redoLines
+	const lastRedoLineCommand: LineCommand | undefined = redoLines.pop();
+	if (lastRedoLineCommand != undefined) {
+		// add the command to displayLines
+		displayLines.push(lastRedoLineCommand);
+		// dispatch drawing changed event
+		canvas.dispatchEvent(drawingChangedEvent);
 	}
 });
 app.append(redoButton);
@@ -156,8 +160,12 @@ app.append(redoButton);
 // Thin Button
 const thinButton: HTMLButtonElement = document.createElement("button");
 thinButton.innerHTML = "Thin";
+thinButton.disabled = true;	// thin is selected initially thus this button is disabled initially
 thinButton.addEventListener("click", () => {
 	lineWidth = THIN;
+
+	thinButton.disabled = true;
+	thickButton.disabled = false;
 });
 app.append(thinButton);
 
@@ -167,5 +175,7 @@ const thickButton: HTMLButtonElement = document.createElement("button");
 thickButton.innerHTML = "Thick";
 thickButton.addEventListener("click", () => {
 	lineWidth = THICK;
+	thickButton.disabled = true;
+	thinButton.disabled = false;
 });
 app.append(thickButton);
