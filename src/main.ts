@@ -28,8 +28,8 @@ interface Cursor {
 // with the recent "Functions are the Ultimate Commands" annoucement in Canvas, I'm unclear whether we're supposed to implement these line commands
 // using classes like in paint2.html or using functional programming like in Functions are the Ultimate Commands (TS Playground)
 // I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
-type LineCommand = (ctx: CanvasRenderingContext2D) => void; // a LineCommand is a function that takes in a ctx and does stuff but doesn't return anything
-function makeLineCommand(line: Point[], width: number): LineCommand {	// an makeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
+type DrawLineCommand = (ctx: CanvasRenderingContext2D) => void;
+function makeLineCommand(line: Point[], width: number): DrawLineCommand {	// an makeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
 	return (ctx: CanvasRenderingContext2D) => {
 		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
 		// set line width
@@ -47,6 +47,8 @@ function makeLineCommand(line: Point[], width: number): LineCommand {	// an make
 		ctx.stroke();
 	}
 }
+//type ShowToolPreviewCommand = (ctx: CanvasRenderingContext2D) => void;
+
 
 // App Title
 const appTitle: HTMLHeadingElement = document.createElement("h1");
@@ -59,8 +61,8 @@ const canvas: HTMLCanvasElement = document.createElement("canvas");
 const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d"); // ctx = "context" aka "CanvasRenderingContext2D object"
 if (ctx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
 const cursor: Cursor = { active: false, pos: { x: 0, y: 0 } };
-let displayLines: LineCommand[] = []; // lines that should be displayed
-let redoLines: LineCommand[] = []; // lines that have been undone
+let displayLines: DrawLineCommand[] = []; // lines that should be displayed
+let redoLines: DrawLineCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 const drawingChangedEvent: Event = new Event("drawing-changed");
 const toolMovedEvent: Event = new Event("tool-moved");
@@ -70,7 +72,7 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // create cursor canvas events (e = "event object")
-canvas.addEventListener("tool-moved", (e) => {
+canvas.addEventListener("tool-moved", () => {
 	ctx.beginPath();
 	ctx.ellipse(cursor.pos.x, cursor.pos.y, lineWidth, lineWidth, 0, 0, 2*Math.PI);
 	ctx.stroke();
@@ -146,7 +148,7 @@ const undoButton: HTMLButtonElement = document.createElement("button");
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
 	// attempt to get the lastest line command while removing it from displayLines
-	const lastLineCommand: LineCommand | undefined = displayLines.pop();
+	const lastLineCommand: DrawLineCommand | undefined = displayLines.pop();
 	if (lastLineCommand != undefined) {
 		// add the command to redoLines
 		redoLines.push(lastLineCommand);
@@ -161,7 +163,7 @@ const redoButton: HTMLButtonElement = document.createElement("button");
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
 		// attempt to get the lastest line command while removing it from redoLines
-	const lastRedoLineCommand: LineCommand | undefined = redoLines.pop();
+	const lastRedoLineCommand: DrawLineCommand | undefined = redoLines.pop();
 	if (lastRedoLineCommand != undefined) {
 		// add the command to displayLines
 		displayLines.push(lastRedoLineCommand);
