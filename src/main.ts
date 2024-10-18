@@ -25,8 +25,8 @@ interface Point { // a Line would be an array of points: Point[]
 // with the recent "Functions are the Ultimate Commands" annoucement in Canvas, I'm unclear whether we're supposed to implement these line commands
 // using classes like in paint2.html or using functional programming like in Functions are the Ultimate Commands (TS Playground)
 // I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
-type DrawLineCommand = (ctx: CanvasRenderingContext2D) => void;
-function makeDrawLineCommand(line: Point[], width: number): DrawLineCommand {
+type RenderThingCommand = (ctx: CanvasRenderingContext2D) => void;
+function makeRenderLineCommand(line: Point[], width: number): RenderThingCommand {
 	return (ctx: CanvasRenderingContext2D) => {
 		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
 		// set line width
@@ -44,8 +44,7 @@ function makeDrawLineCommand(line: Point[], width: number): DrawLineCommand {
 		ctx.stroke();
 	}
 }
-type ShowToolPreviewCommand = (ctx: CanvasRenderingContext2D) => void;
-function makeShowToolPreviewCommand(pos: Point, radius: number) {
+function makeRenderToolPreviewCommand(pos: Point, radius: number) {
 	return (ctx: CanvasRenderingContext2D) => {
 		// set line width
 		ctx.lineWidth = THIN;
@@ -57,8 +56,7 @@ function makeShowToolPreviewCommand(pos: Point, radius: number) {
 		ctx.stroke();
 	}
 }
-type ShowStickerPreviewCommand = (ctx: CanvasRenderingContext2D) => void;
-function makeShowStickerPreviewCommand(pos: Point, sticker: string) {
+function makeRenderStickerCommand(pos: Point, sticker: string) {	// used for sticker preview and actual placed stickers
 	return (ctx: CanvasRenderingContext2D) => {
 		ctx.font = "32px monospace";
         ctx.fillText(sticker, pos.x - 21, pos.y + 12);
@@ -75,11 +73,11 @@ app.append(appTitle);
 const canvas: HTMLCanvasElement = document.createElement("canvas");
 const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d"); // ctx = "context" aka "CanvasRenderingContext2D object"
 if (ctx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
-let displayLines: DrawLineCommand[] = []; // lines that should be displayed
-let redoLines: DrawLineCommand[] = []; // lines that have been undone
+let displayCommands: RenderThingCommand[] = []; // lines that should be displayed
+let redoCommands: RenderThingCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
-let showToolPreviewCommand: ShowToolPreviewCommand | null = null;
-let showStickerPreviewCommand: ShowStickerPreviewCommand | null = null;
+let showToolPreviewCommand: RenderThingCommand | null = null;
+let showStickerPreviewCommand: RenderThingCommand | null = null;
 const drawingChangedEvent: Event = new Event("drawing-changed");
 const toolMovedEvent: Event = new Event("tool-moved");
 
@@ -91,14 +89,14 @@ canvas.height = CANVAS_HEIGHT;
 canvas.addEventListener("mousedown", (e: MouseEvent) => {
 	// enter the first point into currentLine
 	currentLine.push({ x: e.offsetX, y: e.offsetY });
-	// convert currentLine into a line command, and enter that command into displayLines so it can be popped in the mouse move or mouse up events
-	displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
-	// hide the tool and/ore sticker preview
+	// convert currentLine into a line command, and enter that command into displayCommands so it can be popped in the mouse move or mouse up events
+	displayCommands.push(makeRenderLineCommand(currentLine, lineWidth));
+	// hide the tool and/or sticker preview
 	showToolPreviewCommand = null;
 	showStickerPreviewCommand = null;
 	canvas.dispatchEvent(drawingChangedEvent);
-	// clear redoLines
-	redoLines = [];
+	// clear redoCommands
+	redoCommands = [];
 });
 canvas.addEventListener("mousemove", (e: MouseEvent) => {
 	// draw
@@ -106,26 +104,26 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
 		// push the cursor's position into currentLine
 		currentLine.push({ x: e.offsetX, y: e.offsetY });
 		// replace the current line command with a new one with an updated currentLine
-		displayLines.pop();
-		displayLines.push(makeDrawLineCommand(currentLine, lineWidth));
+		displayCommands.pop();
+		displayCommands.push(makeRenderLineCommand(currentLine, lineWidth));
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
 	// make and show tool preview
 	else if (markerSelected) {
-		showToolPreviewCommand = makeShowToolPreviewCommand({ x: e.offsetX, y: e.offsetY }, lineWidth);
+		showToolPreviewCommand = makeRenderToolPreviewCommand({ x: e.offsetX, y: e.offsetY }, lineWidth);
 		canvas.dispatchEvent(toolMovedEvent);
 	}
 	// make and show sticker preview
 	else {
-		showStickerPreviewCommand = makeShowStickerPreviewCommand( { x: e.offsetX, y: e.offsetY }, sticker);
+		showStickerPreviewCommand = makeRenderStickerCommand( { x: e.offsetX, y: e.offsetY }, sticker);
 		canvas.dispatchEvent(toolMovedEvent);
 	}
 });
 canvas.addEventListener("mouseup", () => {
 	// get rid of the most recent line command if the line is just a point and therefore isn't proper
 	if (currentLine.length == 1) {
-		displayLines.pop();
+		displayCommands.pop();
 	}
 	// show tool preview
 	canvas.dispatchEvent(toolMovedEvent);
@@ -156,7 +154,7 @@ function redraw() {
 	// clear the canvas so we can redraw the lines and/or cursor
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// draw the lines
-	for (const lineCommand of displayLines) {
+	for (const lineCommand of displayCommands) {
 		lineCommand(ctx); // execute
 	}
 	// draw the cursor
@@ -174,8 +172,8 @@ app.append(canvas);
 const clearButton: HTMLButtonElement = document.createElement("button");
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
-	// clear displayLines
-	displayLines = [];
+	// clear displayCommands
+	displayCommands = [];
 	// dispatch drawing changed event
 	canvas.dispatchEvent(drawingChangedEvent);
 });
@@ -185,11 +183,11 @@ app.append(clearButton);
 const undoButton: HTMLButtonElement = document.createElement("button");
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
-	// attempt to get the lastest line command while removing it from displayLines
-	const lastLineCommand: DrawLineCommand | undefined = displayLines.pop();
+	// attempt to get the lastest line command while removing it from displayCommands
+	const lastLineCommand: RenderThingCommand | undefined = displayCommands.pop();
 	if (lastLineCommand != undefined) {
-		// add the command to redoLines
-		redoLines.push(lastLineCommand);
+		// add the command to redoCommands
+		redoCommands.push(lastLineCommand);
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
@@ -200,11 +198,11 @@ app.append(undoButton);
 const redoButton: HTMLButtonElement = document.createElement("button");
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
-		// attempt to get the lastest line command while removing it from redoLines
-	const lastRedoLineCommand: DrawLineCommand | undefined = redoLines.pop();
+		// attempt to get the lastest line command while removing it from redoCommands
+	const lastRedoLineCommand: RenderThingCommand | undefined = redoCommands.pop();
 	if (lastRedoLineCommand != undefined) {
-		// add the command to displayLines
-		displayLines.push(lastRedoLineCommand);
+		// add the command to displayCommands
+		displayCommands.push(lastRedoLineCommand);
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
 	}
