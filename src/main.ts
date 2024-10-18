@@ -147,3 +147,20 @@ redoButton.addEventListener("click", () => {
 	}
 });
 app.append(redoButton);
+
+// Thin Button
+const thinButton: HTMLButtonElement = document.createElement("button");
+thinButton.innerHTML = "Thin";
+thinButton.addEventListener("click", () => {
+	ctx.lineWidth = 1;
+});
+app.append(thinButton);
+
+
+// Thick Button
+const thickButton: HTMLButtonElement = document.createElement("button");
+thickButton.innerHTML = "Thick";
+thickButton.addEventListener("click", () => {
+	ctx.lineWidth = 4;
+});
+app.append(thickButton);
