@@ -17,6 +17,26 @@ interface Cursor {
 	pos: Point	// "position"
 }
 
+// Types
+type LineCommand = (ctx: CanvasRenderingContext2D) => void;
+function executeLineCommand(line: Point[]): LineCommand {
+	return (ctx: CanvasRenderingContext2D) => {
+		if (line.length > 1) {
+			// start a new line
+			ctx.beginPath();
+			// move to the first point
+			const { x, y } = line[0];
+			ctx.moveTo(x, y);
+			// loop through the points, connecting them to make the line
+			for (const { x, y } of line) {
+				ctx.lineTo(x, y);
+			}
+			// show the line
+			ctx.stroke();
+		}
+	}
+}
+
 // Variables
 const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH;
@@ -79,7 +99,7 @@ canvas.addEventListener("drawing-changed", () => {
 			ctx.beginPath();
 			// move to the first point
 			const { x, y } = line[0];
-            ctx.moveTo(x, y);
+			ctx.moveTo(x, y);
 			// connect the points to make the line
 			for (const { x, y } of line) {
 				ctx.lineTo(x, y);
