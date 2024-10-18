@@ -71,7 +71,9 @@ canvas.height = CANVAS_HEIGHT;
 
 // create cursor canvas events (e = "event object")
 canvas.addEventListener("tool-moved", (e) => {
-	console.log("hi");
+	ctx.beginPath();
+	ctx.ellipse(cursor.pos.x, cursor.pos.y, lineWidth, lineWidth, 0, 0, 2*Math.PI);
+	ctx.stroke();
 });
 
 // create drawing canvas events (e = "event object")
@@ -90,13 +92,14 @@ canvas.addEventListener("mousedown", (e) => {
 	redoLines = [];
 });
 canvas.addEventListener("mousemove", (e) => {
+	// set cursor position
+	cursor.pos.x = e.offsetX;
+	cursor.pos.y = e.offsetY;
 	// dispatch tool moved event
 	canvas.dispatchEvent(toolMovedEvent);
 	// potentially draw
 	if (cursor.active) {
-		// push the cursor's new position into currentLine
-		cursor.pos.x = e.offsetX;
-		cursor.pos.y = e.offsetY;
+		// push the cursor's position into currentLine
 		currentLine.push({ x: cursor.pos.x, y: cursor.pos.y });
 		// replace the current line command with a new one with an updated currentLine
 		displayLines.pop();
@@ -122,6 +125,8 @@ canvas.addEventListener("drawing-changed", () => {
 	for (const lineCommand of displayLines) {
 		lineCommand(ctx); // execute command
 	}
+	// redraw the cursor
+	//ctx.ellipse(cursor.pos.x, cursor.pos.y, lineWidth, lineWidth, 0, 0, 359);
 });
 app.append(canvas);
 
