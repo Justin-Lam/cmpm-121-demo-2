@@ -17,9 +17,13 @@ interface Cursor {
 	pos: Point	// "position"
 }
 
-// Types
-type LineCommand = (ctx: CanvasRenderingContext2D) => void;
+// Commands
+// with the recent "Functions are the Ultimate Commands" annoucement in Canvas, I'm unclear whether we're supposed to implement these line commands
+// using classes like in paint2.html or using functional programming like in Functions are the Ultimate Commands (TS Playground)
+// I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
+type LineCommand = (ctx: CanvasRenderingContext2D) => void;		// a LineCommand is a function that takes in a ctx and does stuff but doesn't return anything
 function executeLineCommand(line: Point[]): LineCommand {
+	// an executeLineCommand is a function that takes in and thus contains a line; it uses that line to return a complete LineCommand
 	return (ctx: CanvasRenderingContext2D) => {
 		if (line.length > 1) {
 			// start a new line
