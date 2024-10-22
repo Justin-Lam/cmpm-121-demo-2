@@ -9,8 +9,10 @@ document.title = APP_NAME;
 // Constants
 const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH; // square canvas
-const THIN = 1; // line width
-const THICK = 4; // line width
+const EXPORT_CANVAS_WIDTH: number = 1024;
+const EXPORT_CANVAS_HEIGHT: number = EXPORT_CANVAS_WIDTH;
+const THIN: number = 1; // line width
+const THICK: number = 4; // line width
 const stickers: Sticker[] = [
 	// default stickers
 	{
@@ -59,7 +61,10 @@ function makeRenderLineCommand(
 		ctx.stroke();
 	};
 }
-function makeRenderToolPreviewCommand(pos: Point, radius: number) {
+function makeRenderToolPreviewCommand(
+	pos: Point,
+	radius: number,
+): RenderThingCommand {
 	return (ctx: CanvasRenderingContext2D) => {
 		// set line width
 		ctx.lineWidth = THIN;
@@ -71,7 +76,10 @@ function makeRenderToolPreviewCommand(pos: Point, radius: number) {
 		ctx.stroke();
 	};
 }
-function makeRenderStickerCommand(pos: Point, sticker: string) { // used for sticker preview and placing stickers
+function makeRenderStickerCommand(
+	pos: Point,
+	sticker: string,
+): RenderThingCommand { // used for sticker preview and placing stickers
 	return (ctx: CanvasRenderingContext2D) => {
 		ctx.font = "32px monospace";
 		ctx.fillText(sticker, pos.x - 21, pos.y + 12); // center the sticker preview at the tip of the cursor
@@ -91,9 +99,9 @@ if (ctx == null) throw new Error("ctx is null"); // ensure that we got something
 let displayCommands: RenderThingCommand[] = []; // lines that should be displayed
 let redoCommands: RenderThingCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
-let currentLineWidth = THIN; // thin by default
-let currentSticker = "";
-let markerSelected = true; // selected by default
+let currentLineWidth: number = THIN; // thin by default
+let currentSticker: string = "";
+let markerSelected: boolean = true; // selected by default
 let showToolPreviewCommand: RenderThingCommand | null = null;
 let showStickerPreviewCommand: RenderThingCommand | null = null;
 const drawingChangedEvent: Event = new Event("drawing-changed");
@@ -107,6 +115,8 @@ canvas.height = CANVAS_HEIGHT;
 canvas.addEventListener("mousedown", (e: MouseEvent) => {
 	// drawing
 	if (markerSelected) {
+		// reset currentLine in case it still has the previous line in it (yeah I know this is a lazy bugfix)
+		currentLine = [];
 		// enter the first point into currentLine
 		currentLine.push({ x: e.offsetX, y: e.offsetY });
 		// convert currentLine into a line command, and enter that command into displayCommands so it can be popped in the mouse move or mouse up events
@@ -211,7 +221,7 @@ canvas.addEventListener("tool-moved", () => {
 });
 
 // define canvas functions
-function redraw() {
+function redraw(): void {
 	// ensure ctx isn't null
 	if (!ctx) {
 		return;
@@ -274,6 +284,17 @@ redoButton.addEventListener("click", () => {
 });
 app.append(redoButton);
 
+// Export Button
+const exportButton: HTMLButtonElement = document.createElement("button");
+exportButton.innerHTML = "Export";
+exportButton.addEventListener("click", () => {
+	// create temporary export canvas
+	const exportCanvas: HTMLCanvasElement = document.createElement("canvas");
+	exportCanvas.width = EXPORT_CANVAS_WIDTH;
+	exportCanvas.height = EXPORT_CANVAS_HEIGHT;
+});
+app.append(exportButton);
+
 // Thin Button
 const thinButton: HTMLButtonElement = document.createElement("button");
 thinButton.innerHTML = "Thin";
@@ -312,7 +333,7 @@ addStickerButton.addEventListener("click", () => {
 	const value: string | null = prompt("Enter sticker:", "🧽");
 	if (value != null) {
 		// create sticker object
-		const sticker = {
+		const sticker: Sticker = {
 			sticker: value,
 		};
 		//  add sticker object to stickers array
