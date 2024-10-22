@@ -320,13 +320,17 @@ app.append(exportButton);
 const thinButton: HTMLButtonElement = document.createElement("button");
 thinButton.innerHTML = "Thin";
 thinButton.disabled = true; // thin is selected initially thus this button is disabled initially
+thinButton.classList.add("selectedTool");
 thinButton.addEventListener("click", () => {
 	currentLineWidth = THIN;
 	markerSelected = true;
 	thinButton.disabled = true;
+	thinButton.classList.add("selectedTool");
 	thickButton.disabled = false;
+	thickButton.classList.remove("selectedTool");
 	for (const button of stickerButtons) {
 		button.disabled = false;
+		button.classList.remove("selectedTool");
 	}
 	canvas.dispatchEvent(toolMovedEvent);
 });
@@ -339,9 +343,12 @@ thickButton.addEventListener("click", () => {
 	currentLineWidth = THICK;
 	markerSelected = true;
 	thinButton.disabled = false;
+	thinButton.classList.remove("selectedTool");
 	thickButton.disabled = true;
+	thickButton.classList.add("selectedTool");
 	for (const button of stickerButtons) {
 		button.disabled = false;
+		button.classList.remove("selectedTool");
 	}
 	canvas.dispatchEvent(toolMovedEvent);
 });
@@ -378,13 +385,17 @@ function createStickerButton(sticker: Sticker): HTMLButtonElement {
 		currentSticker = sticker.sticker;
 		markerSelected = false;
 		thinButton.disabled = false;
+		thinButton.classList.remove("selectedTool");
 		thickButton.disabled = false;
+		thickButton.classList.remove("selectedTool");
 
 		// make this sticker button the only disabled one by enabling every button then specifically disabling this one
 		for (const button of stickerButtons) {
 			button.disabled = false;
+			button.classList.remove("selectedTool");
 		}
 		button.disabled = true;
+		button.classList.add("selectedTool");
 
 		canvas.dispatchEvent(toolMovedEvent);
 	});
