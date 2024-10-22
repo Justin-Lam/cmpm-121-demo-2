@@ -288,10 +288,28 @@ app.append(redoButton);
 const exportButton: HTMLButtonElement = document.createElement("button");
 exportButton.innerHTML = "Export";
 exportButton.addEventListener("click", () => {
+
 	// create temporary export canvas
 	const exportCanvas: HTMLCanvasElement = document.createElement("canvas");
 	exportCanvas.width = EXPORT_CANVAS_WIDTH;
 	exportCanvas.height = EXPORT_CANVAS_HEIGHT;
+
+	// create temporary ctx and scale it
+	const exportCtx: CanvasRenderingContext2D | null = exportCanvas.getContext("2d"); // ctx = "context" aka "CanvasRenderingContext2D object"
+	if (exportCtx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
+	exportCtx.scale(EXPORT_CANVAS_WIDTH / CANVAS_WIDTH, EXPORT_CANVAS_HEIGHT / CANVAS_HEIGHT);
+
+	// render all display commands on the export canvas
+	for (const command of displayCommands) {
+		command(exportCtx);	// execute
+	}
+
+	// download the canvas as a png file
+	const anchor = document.createElement("a");
+	anchor.href = exportCanvas.toDataURL("image/png");
+	anchor.download = "sketchpad.png";
+	anchor.click();
+
 });
 app.append(exportButton);
 
