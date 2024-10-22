@@ -305,9 +305,32 @@ thickButton.addEventListener("click", () => {
 });
 app.append(thickButton);
 
+// Add Sticker Button
+const addStickerButton: HTMLButtonElement = document.createElement("button");
+addStickerButton.innerHTML = "Add Sticker";
+addStickerButton.addEventListener("click", () => {
+	const value: string | null = prompt("Enter sticker:", "🧽");
+	if (value != null) {
+
+		stickers.push(
+			{
+				sticker: value
+			}
+		);
+
+		stickerButtons.push
+
+	}
+});
+app.append(addStickerButton);
+
 // Sticker Buttons 😊💖⭐
 const stickerButtons: HTMLButtonElement[] = [];
 for (const sticker of stickers) {
+	stickerButtons.push(createStickerButton(sticker));
+}
+
+function createStickerButton(sticker: Sticker): HTMLButtonElement {
 	const button: HTMLButtonElement = document.createElement("button");
 	button.innerHTML = sticker.sticker;
 	button.addEventListener("click", () => {
@@ -325,5 +348,5 @@ for (const sticker of stickers) {
 		canvas.dispatchEvent(toolMovedEvent);
 	});
 	app.append(button);
-	stickerButtons.push(button);
+	return button;
 }
