@@ -311,15 +311,14 @@ addStickerButton.innerHTML = "Add Sticker";
 addStickerButton.addEventListener("click", () => {
 	const value: string | null = prompt("Enter sticker:", "🧽");
 	if (value != null) {
-
-		stickers.push(
-			{
-				sticker: value
-			}
-		);
-
-		stickerButtons.push
-
+		// create sticker object
+		const sticker = {
+			sticker: value,
+		};
+		//  add sticker object to stickers array
+		stickers.push(sticker);
+		// use sticker object to create sticker button and add to stickerButtons array
+		stickerButtons.push(createStickerButton(sticker));
 	}
 });
 app.append(addStickerButton);
