@@ -10,7 +10,7 @@ document.title = APP_NAME;
 const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH; // square canvas
 const EXPORT_CANVAS_WIDTH: number = 1024;
-const EXPORT_CANVAS_HEIGHT: number = EXPORT_CANVAS_WIDTH;	// square canvas
+const EXPORT_CANVAS_HEIGHT: number = EXPORT_CANVAS_WIDTH; // square canvas
 const THIN: number = 1; // line width
 const THICK: number = 4; // line width
 const stickers: Sticker[] = [
@@ -43,7 +43,7 @@ type RenderThingCommand = (ctx: CanvasRenderingContext2D) => void;
 function makeRenderLineCommand(
 	line: Point[],
 	width: number,
-	color: string
+	color: string,
 ): RenderThingCommand {
 	return (ctx: CanvasRenderingContext2D) => {
 		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
@@ -70,11 +70,11 @@ function makeRenderToolPreviewCommand(
 	return (ctx: CanvasRenderingContext2D) => {
 		// set line width and color
 		ctx.lineWidth = THIN;
-		ctx.strokeStyle = "black";
+		ctx.strokeStyle = currentLineColor;
 		// start a new line
 		ctx.beginPath();
 		// draw the circle
-		ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2*Math.PI);
+		ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2 * Math.PI);
 		// show the circle
 		ctx.stroke();
 	};
@@ -103,7 +103,7 @@ let displayCommands: RenderThingCommand[] = []; // lines that should be displaye
 let redoCommands: RenderThingCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 let currentLineWidth: number = THIN; // thin by default
-let currentLineColor: string = "black";	// black by default
+let currentLineColor: string = "black"; // black by default
 let currentSticker: string = "";
 let markerSelected: boolean = true; // selected by default
 let showToolPreviewCommand: RenderThingCommand | null = null;
@@ -125,7 +125,11 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
 		currentLine.push({ x: e.offsetX, y: e.offsetY });
 		// convert currentLine into a line command, and enter that command into displayCommands so it can be popped in the mouse move or mouse up events
 		displayCommands.push(
-			makeRenderLineCommand(currentLine, currentLineWidth, currentLineColor),
+			makeRenderLineCommand(
+				currentLine,
+				currentLineWidth,
+				currentLineColor,
+			),
 		);
 		// hide the tool preview
 		showToolPreviewCommand = null;
@@ -156,7 +160,11 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
 		// replace the current line command with a new one with an updated currentLine
 		displayCommands.pop();
 		displayCommands.push(
-			makeRenderLineCommand(currentLine, currentLineWidth, currentLineColor),
+			makeRenderLineCommand(
+				currentLine,
+				currentLineWidth,
+				currentLineColor,
+			),
 		);
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
@@ -328,6 +336,7 @@ thinButton.classList.add("selectedTool");
 thinButton.addEventListener("click", () => {
 	currentLineWidth = THIN;
 	markerSelected = true;
+	currentLineColor = randomColor();
 	thinButton.disabled = true;
 	thinButton.classList.add("selectedTool");
 	thickButton.disabled = false;
@@ -346,6 +355,7 @@ thickButton.innerHTML = "Thick";
 thickButton.addEventListener("click", () => {
 	currentLineWidth = THICK;
 	markerSelected = true;
+	currentLineColor = randomColor();
 	thinButton.disabled = false;
 	thinButton.classList.remove("selectedTool");
 	thickButton.disabled = true;
@@ -357,32 +367,6 @@ thickButton.addEventListener("click", () => {
 	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thickButton);
-
-// Black Button
-const blackButton: HTMLButtonElement = document.createElement("button");
-blackButton.innerHTML = "Black Marker";
-blackButton.disabled = true;	// selected by default
-blackButton.classList.add("selectedTool");
-blackButton.addEventListener("click", () => {
-	currentLineColor = "black";
-	blackButton.disabled = true;
-	blackButton.classList.add("selectedTool");
-	whiteButton.disabled = false;
-	whiteButton.classList.remove("selectedTool");
-});
-app.append(blackButton);
-
-// White Button
-const whiteButton: HTMLButtonElement = document.createElement("button");
-whiteButton.innerHTML = "White Marker";
-whiteButton.addEventListener("click", () => {
-	currentLineColor = "white";
-	blackButton.disabled = false;
-	blackButton.classList.remove("selectedTool");
-	whiteButton.disabled = true;
-	whiteButton.classList.add("selectedTool");
-});
-app.append(whiteButton);
 
 // Add Sticker Button
 const addStickerButton: HTMLButtonElement = document.createElement("button");
@@ -413,6 +397,7 @@ function createStickerButton(sticker: Sticker): HTMLButtonElement {
 	button.innerHTML = sticker.sticker;
 	button.addEventListener("click", () => {
 		currentSticker = sticker.sticker;
+		currentLineColor = randomColor();
 		markerSelected = false;
 		thinButton.disabled = false;
 		thinButton.classList.remove("selectedTool");
@@ -431,4 +416,8 @@ function createStickerButton(sticker: Sticker): HTMLButtonElement {
 	});
 	app.append(button);
 	return button;
+}
+
+function randomColor(): string {
+	return "#" + Math.floor(Math.random() * 16777215).toString(16); // copied from https://css-tricks.com/snippets/javascript/random-hex-color/
 }
