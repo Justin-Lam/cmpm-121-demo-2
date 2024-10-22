@@ -43,11 +43,13 @@ type RenderThingCommand = (ctx: CanvasRenderingContext2D) => void;
 function makeRenderLineCommand(
 	line: Point[],
 	width: number,
+	color: string
 ): RenderThingCommand {
 	return (ctx: CanvasRenderingContext2D) => {
 		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
-		// set line width
+		// set line width and color
 		ctx.lineWidth = width;
+		ctx.strokeStyle = color;
 		// start a new line
 		ctx.beginPath();
 		// move to the first point
@@ -66,8 +68,9 @@ function makeRenderToolPreviewCommand(
 	radius: number,
 ): RenderThingCommand {
 	return (ctx: CanvasRenderingContext2D) => {
-		// set line width
+		// set line width and color
 		ctx.lineWidth = THIN;
+		ctx.strokeStyle = "black";
 		// start a new line
 		ctx.beginPath();
 		// draw the circle
@@ -100,6 +103,7 @@ let displayCommands: RenderThingCommand[] = []; // lines that should be displaye
 let redoCommands: RenderThingCommand[] = []; // lines that have been undone
 let currentLine: Point[] = []; //  represents the user's current line when they're drawing; contains the points from mouse down to mouse up
 let currentLineWidth: number = THIN; // thin by default
+let currentLineColor: string = "black";	// black by default
 let currentSticker: string = "";
 let markerSelected: boolean = true; // selected by default
 let showToolPreviewCommand: RenderThingCommand | null = null;
@@ -121,7 +125,7 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
 		currentLine.push({ x: e.offsetX, y: e.offsetY });
 		// convert currentLine into a line command, and enter that command into displayCommands so it can be popped in the mouse move or mouse up events
 		displayCommands.push(
-			makeRenderLineCommand(currentLine, currentLineWidth),
+			makeRenderLineCommand(currentLine, currentLineWidth, currentLineColor),
 		);
 		// hide the tool preview
 		showToolPreviewCommand = null;
@@ -152,7 +156,7 @@ canvas.addEventListener("mousemove", (e: MouseEvent) => {
 		// replace the current line command with a new one with an updated currentLine
 		displayCommands.pop();
 		displayCommands.push(
-			makeRenderLineCommand(currentLine, currentLineWidth),
+			makeRenderLineCommand(currentLine, currentLineWidth, currentLineColor),
 		);
 		// dispatch drawing changed event
 		canvas.dispatchEvent(drawingChangedEvent);
@@ -353,6 +357,32 @@ thickButton.addEventListener("click", () => {
 	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thickButton);
+
+// Black Button
+const blackButton: HTMLButtonElement = document.createElement("button");
+blackButton.innerHTML = "Black Marker";
+blackButton.disabled = true;	// selected by default
+blackButton.classList.add("selectedTool");
+blackButton.addEventListener("click", () => {
+	currentLineColor = "black";
+	blackButton.disabled = true;
+	blackButton.classList.add("selectedTool");
+	whiteButton.disabled = false;
+	whiteButton.classList.remove("selectedTool");
+});
+app.append(blackButton);
+
+// White Button
+const whiteButton: HTMLButtonElement = document.createElement("button");
+whiteButton.innerHTML = "White Marker";
+whiteButton.addEventListener("click", () => {
+	currentLineColor = "white";
+	blackButton.disabled = false;
+	blackButton.classList.remove("selectedTool");
+	whiteButton.disabled = true;
+	whiteButton.classList.add("selectedTool");
+});
+app.append(whiteButton);
 
 // Add Sticker Button
 const addStickerButton: HTMLButtonElement = document.createElement("button");
