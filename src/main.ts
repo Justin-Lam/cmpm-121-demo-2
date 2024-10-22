@@ -11,11 +11,26 @@ const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH; // square canvas
 const THIN = 1; // line width
 const THICK = 4; // line width
+const stickers: Sticker[] = [
+	// default stickers
+	{
+		sticker: "😊",
+	},
+	{
+		sticker: "💖",
+	},
+	{
+		sticker: "⭐",
+	},
+];
 
 // Interfaces
 interface Point { // a Line would be an array of points: Point[]
 	x: number;
 	y: number;
+}
+interface Sticker {
+	sticker: string;
 }
 
 // Commands
@@ -268,9 +283,9 @@ thinButton.addEventListener("click", () => {
 	markerSelected = true;
 	thinButton.disabled = true;
 	thickButton.disabled = false;
-	faceButton.disabled = false;
-	heartButton.disabled = false;
-	starButton.disabled = false;
+	for (const button of stickerButtons) {
+		button.disabled = false;
+	}
 	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thinButton);
@@ -283,52 +298,32 @@ thickButton.addEventListener("click", () => {
 	markerSelected = true;
 	thinButton.disabled = false;
 	thickButton.disabled = true;
-	faceButton.disabled = false;
-	heartButton.disabled = false;
-	starButton.disabled = false;
+	for (const button of stickerButtons) {
+		button.disabled = false;
+	}
 	canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thickButton);
 
 // Sticker Buttons 😊💖⭐
-const faceButton: HTMLButtonElement = document.createElement("button");
-faceButton.innerHTML = "😊";
-faceButton.addEventListener("click", () => {
-	currentSticker = "😊";
-	markerSelected = false;
-	thinButton.disabled = false;
-	thickButton.disabled = false;
-	faceButton.disabled = true;
-	heartButton.disabled = false;
-	starButton.disabled = false;
-	canvas.dispatchEvent(toolMovedEvent);
-});
-app.append(faceButton);
+const stickerButtons: HTMLButtonElement[] = [];
+for (const sticker of stickers) {
+	const button: HTMLButtonElement = document.createElement("button");
+	button.innerHTML = sticker.sticker;
+	button.addEventListener("click", () => {
+		currentSticker = sticker.sticker;
+		markerSelected = false;
+		thinButton.disabled = false;
+		thickButton.disabled = false;
 
-const heartButton: HTMLButtonElement = document.createElement("button");
-heartButton.innerHTML = "💖";
-heartButton.addEventListener("click", () => {
-	currentSticker = "💖";
-	markerSelected = false;
-	thinButton.disabled = false;
-	thickButton.disabled = false;
-	faceButton.disabled = false;
-	heartButton.disabled = true;
-	starButton.disabled = false;
-	canvas.dispatchEvent(toolMovedEvent);
-});
-app.append(heartButton);
+		// make this sticker button the only disabled one by enabling every button then specifically disabling this one
+		for (const button of stickerButtons) {
+			button.disabled = false;
+		}
+		button.disabled = true;
 
-const starButton: HTMLButtonElement = document.createElement("button");
-starButton.innerHTML = "⭐";
-starButton.addEventListener("click", () => {
-	currentSticker = "⭐";
-	markerSelected = false;
-	thinButton.disabled = false;
-	thickButton.disabled = false;
-	faceButton.disabled = false;
-	heartButton.disabled = false;
-	starButton.disabled = true;
-	canvas.dispatchEvent(toolMovedEvent);
-});
-app.append(starButton);
+		canvas.dispatchEvent(toolMovedEvent);
+	});
+	app.append(button);
+	stickerButtons.push(button);
+}
