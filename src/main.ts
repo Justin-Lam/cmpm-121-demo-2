@@ -10,7 +10,7 @@ document.title = APP_NAME;
 const CANVAS_WIDTH: number = 256;
 const CANVAS_HEIGHT: number = CANVAS_WIDTH; // square canvas
 const EXPORT_CANVAS_WIDTH: number = 1024;
-const EXPORT_CANVAS_HEIGHT: number = EXPORT_CANVAS_WIDTH;
+const EXPORT_CANVAS_HEIGHT: number = EXPORT_CANVAS_WIDTH;	// square canvas
 const THIN: number = 1; // line width
 const THICK: number = 4; // line width
 const stickers: Sticker[] = [
@@ -71,7 +71,7 @@ function makeRenderToolPreviewCommand(
 		// start a new line
 		ctx.beginPath();
 		// draw the circle
-		ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2 * Math.PI);
+		ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2*Math.PI);
 		// show the circle
 		ctx.stroke();
 	};
