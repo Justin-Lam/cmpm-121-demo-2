@@ -255,7 +255,6 @@ function redraw(): void {
         showStickerPreviewCommand(ctx); // execute
     }
 }
-app.append(canvas);
 
 // Clear Button
 const clearButton: HTMLButtonElement = document.createElement("button");
@@ -418,6 +417,33 @@ function createStickerButton(sticker: Sticker): HTMLButtonElement {
     });
     app.append(button);
     return button;
+}
+
+// Create a container for the controls and canvas
+const container = document.createElement("div");
+container.style.display = "flex";
+container.style.flexDirection = "column";
+container.style.alignItems = "center";
+container.append(canvas);
+app.append(container);
+
+// Add controls container
+const controls = document.createElement("div");
+controls.style.marginTop = "5px";
+controls.style.marginBottom = "5px";
+controls.append(clearButton, undoButton, redoButton, exportButton);
+container.append(controls);
+
+// Add a drawing tools container
+const tools = document.createElement("div");
+tools.style.justifyContent = "center";
+tools.style.marginBottom = "5px";
+container.append(tools);
+tools.append(thinButton, thickButton, addStickerButton);
+
+// Add sticker buttons to tool container
+for (const button of stickerButtons) {
+    tools.append(button);
 }
 
 function randomColor(): string {
