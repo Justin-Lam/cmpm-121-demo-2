@@ -14,25 +14,25 @@ const EXPORT_CANVAS_HEIGHT: number = EXPORT_CANVAS_WIDTH; // square canvas
 const THIN: number = 1; // line width
 const THICK: number = 4; // line width
 const stickers: Sticker[] = [
-	// default stickers
-	{
-		sticker: "😊",
-	},
-	{
-		sticker: "💖",
-	},
-	{
-		sticker: "⭐",
-	},
+    // default stickers
+    {
+        sticker: "😊",
+    },
+    {
+        sticker: "💖",
+    },
+    {
+        sticker: "⭐",
+    },
 ];
 
 // Interfaces
 interface Point { // a Line would be an array of points: Point[]
-	x: number;
-	y: number;
+    x: number;
+    y: number;
 }
 interface Sticker {
-	sticker: string;
+    sticker: string;
 }
 
 // Commands
@@ -41,52 +41,52 @@ interface Sticker {
 // I'm choosing to go with functional programming because it seems to me like the "JavaScript/TypeScript" way of completing this task
 type RenderThingCommand = (ctx: CanvasRenderingContext2D) => void;
 function makeRenderLineCommand(
-	line: Point[],
-	width: number,
-	color: string,
+    line: Point[],
+    width: number,
+    color: string,
 ): RenderThingCommand {
-	return (ctx: CanvasRenderingContext2D) => {
-		// we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
-		// set line width and color
-		ctx.lineWidth = width;
-		ctx.strokeStyle = color;
-		// start a new line
-		ctx.beginPath();
-		// move to the first point
-		const { x, y } = line[0];
-		ctx.moveTo(x, y);
-		// loop through the points, connecting them to make the line
-		for (const { x, y } of line) {
-			ctx.lineTo(x, y);
-		}
-		// show the line
-		ctx.stroke();
-	};
+    return (ctx: CanvasRenderingContext2D) => {
+        // we can be sure line is a real line that contains 2+ points because the canvas's mouseup event handles that
+        // set line width and color
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        // start a new line
+        ctx.beginPath();
+        // move to the first point
+        const { x, y } = line[0];
+        ctx.moveTo(x, y);
+        // loop through the points, connecting them to make the line
+        for (const { x, y } of line) {
+            ctx.lineTo(x, y);
+        }
+        // show the line
+        ctx.stroke();
+    };
 }
 function makeRenderToolPreviewCommand(
-	pos: Point,
-	radius: number,
+    pos: Point,
+    radius: number,
 ): RenderThingCommand {
-	return (ctx: CanvasRenderingContext2D) => {
-		// set line width and color
-		ctx.lineWidth = THIN;
-		ctx.strokeStyle = currentLineColor;
-		// start a new line
-		ctx.beginPath();
-		// draw the circle
-		ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2 * Math.PI);
-		// show the circle
-		ctx.stroke();
-	};
+    return (ctx: CanvasRenderingContext2D) => {
+        // set line width and color
+        ctx.lineWidth = THIN;
+        ctx.strokeStyle = currentLineColor;
+        // start a new line
+        ctx.beginPath();
+        // draw the circle
+        ctx.ellipse(pos.x, pos.y, radius, radius, 0, 0, 2 * Math.PI);
+        // show the circle
+        ctx.stroke();
+    };
 }
 function makeRenderStickerCommand(
-	pos: Point,
-	sticker: string,
+    pos: Point,
+    sticker: string,
 ): RenderThingCommand { // used for sticker preview and placing stickers
-	return (ctx: CanvasRenderingContext2D) => {
-		ctx.font = "32px monospace";
-		ctx.fillText(sticker, pos.x - 21, pos.y + 12); // center the sticker preview at the tip of the cursor
-	};
+    return (ctx: CanvasRenderingContext2D) => {
+        ctx.font = "32px monospace";
+        ctx.fillText(sticker, pos.x - 21, pos.y + 12); // center the sticker preview at the tip of the cursor
+    };
 }
 
 // App Title
@@ -116,142 +116,144 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // create drawing canvas events
-canvas.addEventListener("mousedown", (e: MouseEvent) => {
-	// drawing
-	if (markerSelected) {
-		// reset currentLine in case it still has the previous line in it (yeah I know this is a lazy bugfix)
-		currentLine = [];
-		// enter the first point into currentLine
-		currentLine.push({ x: e.offsetX, y: e.offsetY });
-		// convert currentLine into a line command, and enter that command into displayCommands so it can be popped in the mouse move or mouse up events
-		displayCommands.push(
-			makeRenderLineCommand(
-				currentLine,
-				currentLineWidth,
-				currentLineColor,
-			),
-		);
-		// hide the tool preview
-		showToolPreviewCommand = null;
-		canvas.dispatchEvent(drawingChangedEvent);
-	} // placing stickers
-	else {
-		// place sticker
-		displayCommands.push(
-			makeRenderStickerCommand(
-				{ x: e.offsetX, y: e.offsetY },
-				currentSticker,
-			),
-		);
-		// hide the sticker preview
-		showStickerPreviewCommand = null;
-	}
+canvas.addEventListener("mousedown", handleMouseDown);
+canvas.addEventListener("mousemove", handleMouseMove);
+canvas.addEventListener("mouseup", handleMouseUp);
+canvas.addEventListener("mouseout", handleMouseOut);
+canvas.addEventListener("drawing-changed", redraw);
+canvas.addEventListener("tool-moved", redraw);
 
-	// dispatch drawing changed event
-	canvas.dispatchEvent(drawingChangedEvent);
-	// clear redoCommands
-	redoCommands = [];
-});
-canvas.addEventListener("mousemove", (e: MouseEvent) => {
-	// draw
-	if (markerSelected && e.buttons == 1) { // left mouse button down
-		// push the cursor's position into currentLine
-		currentLine.push({ x: e.offsetX, y: e.offsetY });
-		// replace the current line command with a new one with an updated currentLine
-		displayCommands.pop();
-		displayCommands.push(
-			makeRenderLineCommand(
-				currentLine,
-				currentLineWidth,
-				currentLineColor,
-			),
-		);
-		// dispatch drawing changed event
-		canvas.dispatchEvent(drawingChangedEvent);
-	} // make and show tool preview
-	else if (markerSelected) {
-		showToolPreviewCommand = makeRenderToolPreviewCommand({
-			x: e.offsetX,
-			y: e.offsetY,
-		}, currentLineWidth);
-		canvas.dispatchEvent(toolMovedEvent);
-	} // move placed sticker
-	else if (e.buttons == 1) { // left mouse button down
-		// replace the current sticker command with a new one with an updated position
-		displayCommands.pop();
-		displayCommands.push(
-			makeRenderStickerCommand(
-				{ x: e.offsetX, y: e.offsetY },
-				currentSticker,
-			),
-		);
-		canvas.dispatchEvent(toolMovedEvent);
-	} // make and show sticker preview
-	else {
-		showStickerPreviewCommand = makeRenderStickerCommand({
-			x: e.offsetX,
-			y: e.offsetY,
-		}, currentSticker);
-		canvas.dispatchEvent(toolMovedEvent);
-	}
-});
-canvas.addEventListener("mouseup", (e: MouseEvent) => {
-	// get rid of the most recent line command if the line is just a point and therefore isn't proper
-	if (currentLine.length == 1) {
-		displayCommands.pop();
-	}
-	// reset currentLine
-	currentLine = [];
-	// make and show tool/sticker preview
-	if (markerSelected) {
-		showToolPreviewCommand = makeRenderToolPreviewCommand({
-			x: e.offsetX,
-			y: e.offsetY,
-		}, currentLineWidth);
-		canvas.dispatchEvent(toolMovedEvent);
-	} else {
-		showStickerPreviewCommand = makeRenderStickerCommand({
-			x: e.offsetX,
-			y: e.offsetY,
-		}, currentSticker);
-		canvas.dispatchEvent(toolMovedEvent);
-	}
-});
-canvas.addEventListener("mouseout", () => {
-	// hide the tool and sticker preview
-	showToolPreviewCommand = null;
-	showStickerPreviewCommand = null;
-	canvas.dispatchEvent(drawingChangedEvent);
-});
-canvas.addEventListener("drawing-changed", () => {
-	redraw();
-});
+function handleMouseDown(e: MouseEvent): void {
+    // drawing
+    if (markerSelected) {
+        // reset currentLine in case it still has the previous line in it (yeah I know this is a lazy bugfix)
+        currentLine = [];
+        // enter the first point into currentLine
+        currentLine.push({ x: e.offsetX, y: e.offsetY });
+        // convert currentLine into a line command, and enter that command into displayCommands so it can be popped in the mouse move or mouse up events
+        displayCommands.push(
+            makeRenderLineCommand(
+                currentLine,
+                currentLineWidth,
+                currentLineColor,
+            ),
+        );
+        // hide the tool preview
+        showToolPreviewCommand = null;
+        canvas.dispatchEvent(drawingChangedEvent);
+    } // placing stickers
+    else {
+        // place sticker
+        displayCommands.push(
+            makeRenderStickerCommand(
+                { x: e.offsetX, y: e.offsetY },
+                currentSticker,
+            ),
+        );
+        // hide the sticker preview
+        showStickerPreviewCommand = null;
+    }
 
-// create cursor canvas events
-canvas.addEventListener("tool-moved", () => {
-	redraw();
-});
+    // dispatch drawing changed event
+    canvas.dispatchEvent(drawingChangedEvent);
+    // clear redoCommands
+    redoCommands = [];
+}
+
+function handleMouseMove(e: MouseEvent): void {
+    // draw
+    if (markerSelected && e.buttons == 1) { // left mouse button down
+        // push the cursor's position into currentLine
+        currentLine.push({ x: e.offsetX, y: e.offsetY });
+        // replace the current line command with a new one with an updated currentLine
+        displayCommands.pop();
+        displayCommands.push(
+            makeRenderLineCommand(
+                currentLine,
+                currentLineWidth,
+                currentLineColor,
+            ),
+        );
+        // dispatch drawing changed event
+        canvas.dispatchEvent(drawingChangedEvent);
+    } // make and show tool preview
+    else if (markerSelected) {
+        showToolPreviewCommand = makeRenderToolPreviewCommand({
+            x: e.offsetX,
+            y: e.offsetY,
+        }, currentLineWidth);
+        canvas.dispatchEvent(toolMovedEvent);
+    } // move placed sticker
+    else if (e.buttons == 1) { // left mouse button down
+        // replace the current sticker command with a new one with an updated position
+        displayCommands.pop();
+        displayCommands.push(
+            makeRenderStickerCommand(
+                { x: e.offsetX, y: e.offsetY },
+                currentSticker,
+            ),
+        );
+        canvas.dispatchEvent(toolMovedEvent);
+    } // make and show sticker preview
+    else {
+        showStickerPreviewCommand = makeRenderStickerCommand({
+            x: e.offsetX,
+            y: e.offsetY,
+        }, currentSticker);
+        canvas.dispatchEvent(toolMovedEvent);
+    }
+}
+
+function handleMouseUp(e: MouseEvent): void {
+    // get rid of the most recent line command if the line is just a point and therefore isn't proper
+    if (currentLine.length == 1) {
+        displayCommands.pop();
+    }
+    // reset currentLine
+    currentLine = [];
+    // make and show tool/sticker preview
+    if (markerSelected) {
+        showToolPreviewCommand = makeRenderToolPreviewCommand({
+            x: e.offsetX,
+            y: e.offsetY,
+        }, currentLineWidth);
+        canvas.dispatchEvent(toolMovedEvent);
+    } else {
+        showStickerPreviewCommand = makeRenderStickerCommand({
+            x: e.offsetX,
+            y: e.offsetY,
+        }, currentSticker);
+        canvas.dispatchEvent(toolMovedEvent);
+    }
+}
+
+function handleMouseOut(): void {
+    // hide the tool and sticker preview
+    showToolPreviewCommand = null;
+    showStickerPreviewCommand = null;
+    canvas.dispatchEvent(drawingChangedEvent);
+}
 
 // define canvas functions
 function redraw(): void {
-	// ensure ctx isn't null
-	if (!ctx) {
-		return;
-	}
-	// clear the canvas so we can redraw the lines and/or cursor
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	// execute the display commands
-	for (const command of displayCommands) {
-		command(ctx); // execute
-	}
-	// draw the cursor
-	if (showToolPreviewCommand) { // != null
-		showToolPreviewCommand(ctx); // execute
-	}
-	// draw the sticker
-	if (showStickerPreviewCommand) { // != null
-		showStickerPreviewCommand(ctx); // execute
-	}
+    // ensure ctx isn't null
+    if (!ctx) {
+        return;
+    }
+    // clear the canvas so we can redraw the lines and/or cursor
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // execute the display commands
+    for (const command of displayCommands) {
+        command(ctx); // execute
+    }
+    // draw the cursor
+    if (showToolPreviewCommand) { // != null
+        showToolPreviewCommand(ctx); // execute
+    }
+    // draw the sticker
+    if (showStickerPreviewCommand) { // != null
+        showStickerPreviewCommand(ctx); // execute
+    }
 }
 app.append(canvas);
 
@@ -259,10 +261,10 @@ app.append(canvas);
 const clearButton: HTMLButtonElement = document.createElement("button");
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
-	// clear displayCommands
-	displayCommands = [];
-	// dispatch drawing changed event
-	canvas.dispatchEvent(drawingChangedEvent);
+    // clear displayCommands
+    displayCommands = [];
+    // dispatch drawing changed event
+    canvas.dispatchEvent(drawingChangedEvent);
 });
 app.append(clearButton);
 
@@ -270,14 +272,14 @@ app.append(clearButton);
 const undoButton: HTMLButtonElement = document.createElement("button");
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
-	// attempt to get the lastest command while removing it from displayCommands
-	const lastCommand: RenderThingCommand | undefined = displayCommands.pop();
-	if (lastCommand != undefined) {
-		// add the command to redoCommands
-		redoCommands.push(lastCommand);
-		// dispatch drawing changed event
-		canvas.dispatchEvent(drawingChangedEvent);
-	}
+    // attempt to get the lastest command while removing it from displayCommands
+    const lastCommand: RenderThingCommand | undefined = displayCommands.pop();
+    if (lastCommand != undefined) {
+        // add the command to redoCommands
+        redoCommands.push(lastCommand);
+        // dispatch drawing changed event
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
 });
 app.append(undoButton);
 
@@ -285,14 +287,14 @@ app.append(undoButton);
 const redoButton: HTMLButtonElement = document.createElement("button");
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
-	// attempt to get the lastest command while removing it from redoCommands
-	const lastCommand: RenderThingCommand | undefined = redoCommands.pop();
-	if (lastCommand != undefined) {
-		// add the command to displayCommands
-		displayCommands.push(lastCommand);
-		// dispatch drawing changed event
-		canvas.dispatchEvent(drawingChangedEvent);
-	}
+    // attempt to get the lastest command while removing it from redoCommands
+    const lastCommand: RenderThingCommand | undefined = redoCommands.pop();
+    if (lastCommand != undefined) {
+        // add the command to displayCommands
+        displayCommands.push(lastCommand);
+        // dispatch drawing changed event
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
 });
 app.append(redoButton);
 
@@ -300,31 +302,31 @@ app.append(redoButton);
 const exportButton: HTMLButtonElement = document.createElement("button");
 exportButton.innerHTML = "Export";
 exportButton.addEventListener("click", () => {
-	// create temporary export canvas
-	const exportCanvas: HTMLCanvasElement = document.createElement("canvas");
-	exportCanvas.width = EXPORT_CANVAS_WIDTH;
-	exportCanvas.height = EXPORT_CANVAS_HEIGHT;
+    // create temporary export canvas
+    const exportCanvas: HTMLCanvasElement = document.createElement("canvas");
+    exportCanvas.width = EXPORT_CANVAS_WIDTH;
+    exportCanvas.height = EXPORT_CANVAS_HEIGHT;
 
-	// create temporary ctx and scale it
-	const exportCtx: CanvasRenderingContext2D | null = exportCanvas.getContext(
-		"2d",
-	); // ctx = "context" aka "CanvasRenderingContext2D object"
-	if (exportCtx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
-	exportCtx.scale(
-		EXPORT_CANVAS_WIDTH / CANVAS_WIDTH,
-		EXPORT_CANVAS_HEIGHT / CANVAS_HEIGHT,
-	);
+    // create temporary ctx and scale it
+    const exportCtx: CanvasRenderingContext2D | null = exportCanvas.getContext(
+        "2d",
+    ); // ctx = "context" aka "CanvasRenderingContext2D object"
+    if (exportCtx == null) throw new Error("ctx is null"); // ensure that we got something back from getContext(); brace told me to add this to remove warnings
+    exportCtx.scale(
+        EXPORT_CANVAS_WIDTH / CANVAS_WIDTH,
+        EXPORT_CANVAS_HEIGHT / CANVAS_HEIGHT,
+    );
 
-	// render all display commands on the export canvas
-	for (const command of displayCommands) {
-		command(exportCtx); // execute
-	}
+    // render all display commands on the export canvas
+    for (const command of displayCommands) {
+        command(exportCtx); // execute
+    }
 
-	// download the canvas as a png file
-	const anchor = document.createElement("a");
-	anchor.href = exportCanvas.toDataURL("image/png");
-	anchor.download = "sketchpad.png";
-	anchor.click();
+    // download the canvas as a png file
+    const anchor = document.createElement("a");
+    anchor.href = exportCanvas.toDataURL("image/png");
+    anchor.download = "sketchpad.png";
+    anchor.click();
 });
 app.append(exportButton);
 
@@ -334,18 +336,18 @@ thinButton.innerHTML = "Thin";
 thinButton.disabled = true; // thin is selected initially thus this button is disabled initially
 thinButton.classList.add("selectedTool");
 thinButton.addEventListener("click", () => {
-	currentLineWidth = THIN;
-	markerSelected = true;
-	currentLineColor = randomColor();
-	thinButton.disabled = true;
-	thinButton.classList.add("selectedTool");
-	thickButton.disabled = false;
-	thickButton.classList.remove("selectedTool");
-	for (const button of stickerButtons) {
-		button.disabled = false;
-		button.classList.remove("selectedTool");
-	}
-	canvas.dispatchEvent(toolMovedEvent);
+    currentLineWidth = THIN;
+    markerSelected = true;
+    currentLineColor = randomColor();
+    thinButton.disabled = true;
+    thinButton.classList.add("selectedTool");
+    thickButton.disabled = false;
+    thickButton.classList.remove("selectedTool");
+    for (const button of stickerButtons) {
+        button.disabled = false;
+        button.classList.remove("selectedTool");
+    }
+    canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thinButton);
 
@@ -353,18 +355,18 @@ app.append(thinButton);
 const thickButton: HTMLButtonElement = document.createElement("button");
 thickButton.innerHTML = "Thick";
 thickButton.addEventListener("click", () => {
-	currentLineWidth = THICK;
-	markerSelected = true;
-	currentLineColor = randomColor();
-	thinButton.disabled = false;
-	thinButton.classList.remove("selectedTool");
-	thickButton.disabled = true;
-	thickButton.classList.add("selectedTool");
-	for (const button of stickerButtons) {
-		button.disabled = false;
-		button.classList.remove("selectedTool");
-	}
-	canvas.dispatchEvent(toolMovedEvent);
+    currentLineWidth = THICK;
+    markerSelected = true;
+    currentLineColor = randomColor();
+    thinButton.disabled = false;
+    thinButton.classList.remove("selectedTool");
+    thickButton.disabled = true;
+    thickButton.classList.add("selectedTool");
+    for (const button of stickerButtons) {
+        button.disabled = false;
+        button.classList.remove("selectedTool");
+    }
+    canvas.dispatchEvent(toolMovedEvent);
 });
 app.append(thickButton);
 
@@ -372,52 +374,52 @@ app.append(thickButton);
 const addStickerButton: HTMLButtonElement = document.createElement("button");
 addStickerButton.innerHTML = "Add Sticker";
 addStickerButton.addEventListener("click", () => {
-	const value: string | null = prompt("Enter sticker:", "🧽");
-	if (value != null) {
-		// create sticker object
-		const sticker: Sticker = {
-			sticker: value,
-		};
-		//  add sticker object to stickers array
-		stickers.push(sticker);
-		// use sticker object to create sticker button and add to stickerButtons array
-		stickerButtons.push(createStickerButton(sticker));
-	}
+    const value: string | null = prompt("Enter sticker:", "🧽");
+    if (value != null) {
+        // create sticker object
+        const sticker: Sticker = {
+            sticker: value,
+        };
+        //  add sticker object to stickers array
+        stickers.push(sticker);
+        // use sticker object to create sticker button and add to stickerButtons array
+        stickerButtons.push(createStickerButton(sticker));
+    }
 });
 app.append(addStickerButton);
 
 // Sticker Buttons 😊💖⭐
 const stickerButtons: HTMLButtonElement[] = [];
 for (const sticker of stickers) {
-	stickerButtons.push(createStickerButton(sticker));
+    stickerButtons.push(createStickerButton(sticker));
 }
 
 function createStickerButton(sticker: Sticker): HTMLButtonElement {
-	const button: HTMLButtonElement = document.createElement("button");
-	button.innerHTML = sticker.sticker;
-	button.addEventListener("click", () => {
-		currentSticker = sticker.sticker;
-		currentLineColor = randomColor();
-		markerSelected = false;
-		thinButton.disabled = false;
-		thinButton.classList.remove("selectedTool");
-		thickButton.disabled = false;
-		thickButton.classList.remove("selectedTool");
+    const button: HTMLButtonElement = document.createElement("button");
+    button.innerHTML = sticker.sticker;
+    button.addEventListener("click", () => {
+        currentSticker = sticker.sticker;
+        currentLineColor = randomColor();
+        markerSelected = false;
+        thinButton.disabled = false;
+        thinButton.classList.remove("selectedTool");
+        thickButton.disabled = false;
+        thickButton.classList.remove("selectedTool");
 
-		// make this sticker button the only disabled one by enabling every button then specifically disabling this one
-		for (const button of stickerButtons) {
-			button.disabled = false;
-			button.classList.remove("selectedTool");
-		}
-		button.disabled = true;
-		button.classList.add("selectedTool");
+        // make this sticker button the only disabled one by enabling every button then specifically disabling this one
+        for (const button of stickerButtons) {
+            button.disabled = false;
+            button.classList.remove("selectedTool");
+        }
+        button.disabled = true;
+        button.classList.add("selectedTool");
 
-		canvas.dispatchEvent(toolMovedEvent);
-	});
-	app.append(button);
-	return button;
+        canvas.dispatchEvent(toolMovedEvent);
+    });
+    app.append(button);
+    return button;
 }
 
 function randomColor(): string {
-	return "#" + Math.floor(Math.random() * 16777215).toString(16); // copied from https://css-tricks.com/snippets/javascript/random-hex-color/
+    return "#" + Math.floor(Math.random() * 16777215).toString(16); // copied from https://css-tricks.com/snippets/javascript/random-hex-color/
 }
